@@ -1,0 +1,3 @@
+loaded runs/compare-clean (params=4458752 vocab=8192 ctx=256 device=Cuda(CudaDevice(DeviceId(1))))
+--- completion ---
+, and the same is the same the same the same is the same the same the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the

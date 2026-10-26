@@ -18,6 +18,50 @@ Blank lines are skipped; a malformed line is an error naming the file and line. 
 trimmed, dropped if shorter than `min_chars` or longer than `max_chars`, and exact duplicates
 are removed (first kept). Identical texts can never land in two splits.
 
+## Cleaning the corpus (do this before training)
+
+The raw files here are exactly as they were downloaded: `wikipedia-core/*.md` is rendered
+MediaWiki HTML (53% of its characters are tags and entities), `libretexts.jsonl` carries page
+furniture and exact duplicates, and the dumps carry `data-mw` JSON attributes. Point the trainer
+at the cleaned copy instead of at this directory:
+
+```bash
+cargo build --release -p lm-cli
+
+./target/release/lm-cli clean \
+  --inputs data/speeches data/forums data/wikipedia-core data/misc \
+           data/english-wordnet-2025-json/wordnet.jsonl \
+  --config data/pretrain.json \
+  --out data/cleaned-pretrain
+```
+
+It writes one `<source>.jsonl` per input (loader-ready), `report.json` (kept/dropped counts,
+rejection reasons and cleaning counters per source) and `manifest.json` (policy plus the
+origin/license metadata from `--config`). Inputs are never modified, and two runs over the same
+inputs produce byte-identical output.
+
+What it removes: HTML tags and script/style bodies, entities, MediaWiki attributes (`data-mw`,
+`data-parsoid`), `[edit]` markers, page chrome lines, wiki/Markdown link machinery (keeping the
+visible text), bare URLs, BOM/control characters, runs of the same line, word or punctuation
+run, and excess whitespace. What it keeps: prose, headings, lists, tables, quotations, numbers,
+code and LaTeX. Markup rules only run on documents that actually look like markup, so Markdown
+and plain text pass through with their structure intact.
+
+Measured on this corpus (2026-10): 575.9 M characters in, 519.0 M out (90.1%), 169,842
+documents in, 161,949 kept; Wikipedia alone drops from 36.1 M to 4.9 M characters because a
+real HTML parser agrees only ~14% of it is text. Per-source numbers are in
+`data/cleaned-pretrain/report.json`.
+
+Check the effect on the tokenizer with:
+
+```bash
+./target/release/lm-cli tokenize --run runs/pretrain --input data/wikipedia-core/Mathematics.md
+./target/release/lm-cli tokenize --run runs/pretrain --input data/cleaned-pretrain/wikipedia-core.jsonl
+```
+
+That prints tokens per word and the share of markup-ish tokens. On the raw `Astronomy.md` the
+figures are 7.31 tokens/word and 18.1% markup; on the cleaned text, 1.66 and 2.4%.
+
 ## Declaring a source
 
 Every external source must be declared in the config (`sources` array) with its origin and a
@@ -119,7 +163,8 @@ What the licenses require:
 
 Derived files live next to their source: `english-wordnet-2025-json/wordnet.jsonl` is generated
 from the 70 MB of raw synset JSON by `scripts/wordnet_to_jsonl.py` (re-run it if the JSON is
-replaced). The raw `.json` files are ignored by the loader, so pass the folder, not the files.
+replaced; `scripts/test_wordnet_to_jsonl.py` checks the renderer). The raw `.json` files are
+ignored by the loader, so pass the folder, not the files.
 
 These are recorded in `data/pretrain.json` and end up in each run's `manifest.json`, so a
 checkpoint can always be traced back to the sources and terms it was trained under.

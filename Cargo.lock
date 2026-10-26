@@ -886,6 +886,7 @@ dependencies = [
  "candle-core",
  "candle-nn",
  "lm-data",
+ "lm-infer",
  "lm-model",
  "lm-tokenizer",
  "lm-train",

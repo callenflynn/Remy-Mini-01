@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 lm-data = { path = "../lm-data" }
+lm-infer = { path = "../lm-infer" }
 lm-model = { path = "../lm-model" }
 lm-tokenizer = { path = "../lm-tokenizer" }
 lm-train = { path = "../lm-train" }

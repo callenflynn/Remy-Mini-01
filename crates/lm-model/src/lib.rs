@@ -22,7 +22,20 @@ impl Model {
     pub fn new(cfg: &ModelConfig, vb: VarBuilder) -> Result<Self> {
         cfg.validate()
             .map_err(|e| candle_core::Error::Msg(e.to_string()))?;
-        let embed = candle_nn::embedding(cfg.vocab_size, cfg.d_model, vb.pp("embed"))?;
+        // GPT-2's embedding scale. candle's default normal(0, 1) makes the tied output logits
+        // enormous at step 0 (std ~ sqrt(d_model)), so the first losses are ~7x `ln(vocab)`
+        // instead of ~`ln(vocab)` and the early gradient steps are dominated by rescaling.
+        let embed = candle_nn::Embedding::new(
+            vb.pp("embed").get_with_hints(
+                (cfg.vocab_size, cfg.d_model),
+                "weight",
+                candle_nn::Init::Randn {
+                    mean: 0.0,
+                    stdev: 0.02,
+                },
+            )?,
+            cfg.d_model,
+        );
         let blocks = (0..cfg.n_layers)
             .map(|i| {
                 Block::new(
@@ -153,6 +166,39 @@ mod tests {
         assert!(l2 < 1e-3, "masked-out position leaked into loss: {l2}");
         let l3 = masked_cross_entropy(&logits, &targets, &full)?.to_scalar::<f32>()?;
         assert!((l3 - 2f32.ln()).abs() < 1e-5);
+        Ok(())
+    }
+
+    /// A fresh model must be as uncertain as a uniform distribution over the vocabulary:
+    /// that is what `ln(vocab)` looks like. Initial logits far from zero make the first steps
+    /// huge (they were ~68 instead of ~9 for an 8k vocabulary) and destabilise early training.
+    #[test]
+    fn fresh_model_starts_near_uniform() -> Result<()> {
+        let dev = Device::Cpu;
+        let cfg = ModelConfig {
+            vocab_size: 1024,
+            context_len: 16,
+            d_model: 64,
+            n_layers: 2,
+            n_heads: 4,
+            n_kv_heads: 2,
+            ffn_hidden: 128,
+            rope_theta: 10000.0,
+            rms_eps: 1e-5,
+        };
+        let vm = VarMap::new();
+        let model = Model::new(&cfg, VarBuilder::from_varmap(&vm, DType::F32, &dev))?;
+        let ids: Vec<u32> = (0..16).map(|i| (i * 37 % cfg.vocab_size) as u32).collect();
+        let tokens = Tensor::new(&ids[..8], &dev)?.unsqueeze(0)?;
+        let targets = Tensor::new(&ids[1..9], &dev)?.unsqueeze(0)?;
+        let mask = Tensor::ones((1, 8), DType::F32, &dev)?;
+        let loss = masked_cross_entropy(&model.forward(&tokens)?, &targets, &mask)?
+            .to_scalar::<f32>()? as f64;
+        let uniform = (cfg.vocab_size as f64).ln();
+        assert!(
+            (loss - uniform).abs() < 1.0,
+            "initial loss {loss:.2} is far from uniform {uniform:.2}"
+        );
         Ok(())
     }
 

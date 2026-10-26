@@ -57,6 +57,53 @@ fn tiny_fixture_runs_end_to_end() {
     assert!(s.loss_mask.iter().any(|m| *m == 1));
 }
 
+/// Identical text in two different files must survive once, in exactly one split: otherwise the
+/// same paragraph is trained on and evaluated on, and scores stop meaning anything.
+#[test]
+fn duplicate_text_cannot_straddle_splits() {
+    let dir = std::env::temp_dir().join(format!("lm-leak-{}", std::process::id()));
+    std::fs::remove_dir_all(&dir).ok();
+    std::fs::create_dir_all(&dir).unwrap();
+
+    let shared = "The arctic tern migrates between hemispheres each year, following the summer \
+        sun across open water and coastal staging grounds where it feeds on small fish and \
+        invertebrates, which is among the longest migrations known for any animal.";
+    std::fs::write(dir.join("a.txt"), shared).unwrap();
+    std::fs::write(dir.join("b.txt"), shared).unwrap();
+    let mut filler = String::new();
+    for i in 0..200 {
+        filler.push_str(&format!(
+            "{{\"text\":\"Document number {i} talks about migration routes, wind patterns, \
+             feeding grounds and nesting behaviour in enough words to pass the length filter.\"}}\n"
+        ));
+    }
+    std::fs::write(dir.join("filler.jsonl"), filler).unwrap();
+
+    let mut cfg = Config::default();
+    cfg.split.train = 0.8;
+    cfg.split.val = 0.1;
+    cfg.split.test = 0.1;
+    cfg.normalize.min_chars = 64;
+    cfg.normalize.max_chars = 10_000;
+    cfg.synthetic.arithmetic = 0;
+    cfg.synthetic.logic = 0;
+    cfg.synthetic.word_problems = 0;
+    cfg.synthetic.instructions = 0;
+    cfg.synthetic.coding = 0;
+
+    let inputs = vec![
+        dir.join("a.txt"),
+        dir.join("b.txt"),
+        dir.join("filler.jsonl"),
+    ];
+    let (records, manifest) = prepare(&cfg, &inputs).unwrap();
+    let dupes: Vec<_> = records.iter().filter(|r| r.text.trim() == shared).collect();
+    assert_eq!(dupes.len(), 1, "identical text kept twice");
+    assert!(manifest.dedup_removed >= 1 || manifest.normalize_stats.duplicate >= 1);
+
+    std::fs::remove_dir_all(&dir).ok();
+}
+
 #[test]
 fn loss_mask_selects_exactly_assistant_content_and_end_of_turn() {
     let tok = tokenizer();

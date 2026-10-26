@@ -81,6 +81,20 @@ pub fn split_by_template(template_of: &[String], seed: u64, r: Ratios) -> Result
     Ok(assigned)
 }
 
+/// Deterministic order for the pretraining token stream.
+///
+/// Packing documents in input order means a run shorter than one epoch only ever sees the first
+/// few sources: a 2,000-step run over a speeches/forums/wiki/misc list trains on speeches and
+/// the start of Wikipedia, while validation is drawn from every source. Sorting by
+/// `hash(seed, id)` mixes the corpus without introducing randomness (there is no RNG state, so
+/// the order is reproducible and independent of the order the inputs were listed in). Returns
+/// indices into `ids`.
+pub fn stream_order(ids: &[String], seed: u64) -> Vec<usize> {
+    let mut order: Vec<usize> = (0..ids.len()).collect();
+    order.sort_by_key(|&i| (hash_key(seed ^ 0x5354_5245_414d, &ids[i]), i));
+    order
+}
+
 fn ensure_nonempty(assigned: &[Bucket], r: Ratios, total: usize) -> Result<()> {
     let count = |b: Bucket| assigned.iter().filter(|x| **x == b).count();
     for (name, bucket, ratio) in [
@@ -138,6 +152,32 @@ mod tests {
         let k = keys(3);
         let err = split_hash(&k, 1, R).unwrap_err().to_string();
         assert!(err.contains("empty"), "{err}");
+    }
+
+    #[test]
+    fn stream_order_is_seeded_deterministic_and_independent_of_input_order() {
+        let ids: Vec<String> = (0..500).map(|i| format!("doc#{i}")).collect();
+        let a = stream_order(&ids, 7);
+        assert_eq!(a, stream_order(&ids, 7));
+        assert_ne!(
+            a,
+            (0..500).collect::<Vec<_>>(),
+            "order must not be input order"
+        );
+
+        let mut covered = a.clone();
+        covered.sort_unstable();
+        assert_eq!(covered, (0..500).collect::<Vec<_>>(), "every id once");
+
+        // Reversing the input list must not change the training order.
+        let mut reversed = ids.clone();
+        reversed.reverse();
+        let b: Vec<String> = stream_order(&reversed, 7)
+            .into_iter()
+            .map(|i| reversed[i].clone())
+            .collect();
+        let a_ids: Vec<String> = a.iter().map(|&i| ids[i].clone()).collect();
+        assert_eq!(a_ids, b);
     }
 
     #[test]

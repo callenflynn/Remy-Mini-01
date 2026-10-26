@@ -4,6 +4,7 @@
 //! assistant-only loss masks. See README.md for the formats and how to add external data.
 
 pub mod chat;
+pub mod clean;
 pub mod config;
 pub mod corpus;
 pub mod license;

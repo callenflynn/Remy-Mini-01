@@ -1,0 +1,6 @@
+loaded runs/compare-raw (params=4458752 vocab=8192 ctx=256 device=Cuda(CudaDevice(DeviceId(1))))
+--- completion ---
+ is the same, and the same, and the same, and the same, and the same, and the same to the same to the same, and the same, and the same, and the same to the same to the same to the same to the same.
+-
+-
+-
