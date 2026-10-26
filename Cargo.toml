@@ -1,0 +1,24 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/lm-tokenizer",
+    "crates/lm-model",
+    "crates/lm-data",
+    "crates/lm-train",
+    "crates/lm-infer",
+    "crates/lm-cli",
+]
+
+[workspace.package]
+edition = "2024"
+license = "Apache-2.0"
+version = "0.1.0"
+
+[workspace.dependencies]
+candle-core = { version = "=0.11.0", features = ["cuda"] }
+candle-nn = { version = "=0.11.0", features = ["cuda"] }
+tokenizers = { version = "=0.22.2", default-features = false, features = ["onig"] }
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand = { version = "0.9", features = ["small_rng"] }

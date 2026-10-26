@@ -1,0 +1,3 @@
+{"text": "TEST FIXTURE (project-authored, not external data). Lines of this file show the JSONL input path."}
+{"text": "Each record has a text field; other fields are ignored by the loader, so provenance lives in the config."}
+{"text": "Short fixture records like these only confirm that parsing, splitting and masking work end to end."}

@@ -1,0 +1,4 @@
+TEST FIXTURE (project-authored, not external data). Used only to exercise the data pipeline.
+The river bends past the old mill, and the children count the boats that pass before supper.
+A small model learns patterns from many sentences, so this file is only a smoke test input.
+Careful readers check each claim, note what is known, and say so when the answer is unknown.

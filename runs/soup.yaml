@@ -1,0 +1,20 @@
+base: runs/hf
+task: sft
+backend: transformers
+data:
+  train: runs/sft_data.jsonl
+  format: chatml
+  val_split: 0.25
+  max_length: 128
+training:
+  epochs: 3
+  lr: 0.001
+  batch_size: 2
+  gradient_accumulation_steps: 1
+  logging_steps: 1
+  save_steps: 100
+  lora:
+    r: 8
+    alpha: 16
+    dropout: 0.0
+output: runs/soup_out

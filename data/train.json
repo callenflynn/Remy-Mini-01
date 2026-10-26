@@ -1,0 +1,15 @@
+{
+  "seed": 7,
+  "split": { "strategy": "hash", "train": 0.8, "val": 0.1, "test": 0.1 },
+  "normalize": { "min_chars": 10, "max_chars": 100000 },
+  "synthetic": { "arithmetic": 20, "logic": 20, "word_problems": 20, "instructions": 20, "coding": 20 },
+  "sources": [
+    {
+      "name": "example-corpus",
+      "kind": "fixture",
+      "origin": "project-authored sample in data/example.jsonl",
+      "license": "CC0-1.0",
+      "preprocessing": ["trim", "length filter", "exact-duplicate removal"]
+    }
+  ]
+}

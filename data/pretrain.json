@@ -1,0 +1,57 @@
+{
+  "seed": 7,
+  "split": { "strategy": "hash", "train": 0.98, "val": 0.01, "test": 0.01 },
+  "normalize": { "min_chars": 10, "max_chars": 5000000 },
+  "synthetic": { "arithmetic": 100, "logic": 50, "word_problems": 50, "instructions": 50, "coding": 50 },
+  "sources": [
+    {
+      "name": "wikipedia-core",
+      "kind": "external",
+      "origin": "en.wikipedia.org core article set, saved as data/wikipedia-core/*.md",
+      "license": "CC-BY-SA-4.0",
+      "preprocessing": ["trim", "length filter", "exact-duplicate removal"]
+    },
+    {
+      "name": "libretexts",
+      "kind": "external",
+      "origin": "LibreTexts bookshelves pages, data/misc/libretexts.jsonl (per-book license varies; CC BY-NC-SA unless the page says otherwise)",
+      "license": "CC-BY-NC-SA-4.0",
+      "preprocessing": ["trim", "length filter", "exact-duplicate removal"]
+    },
+    {
+      "name": "reddit-forums",
+      "kind": "external",
+      "origin": "reddit thread dumps saved as data/forums/*.txt",
+      "license": "No-License-Granted",
+      "preprocessing": ["trim", "length filter", "exact-duplicate removal"]
+    },
+    {
+      "name": "hacker-news",
+      "kind": "external",
+      "origin": "Hacker News comment dump, data/misc/hacker_news_2000.txt",
+      "license": "No-License-Granted",
+      "preprocessing": ["trim", "length filter", "exact-duplicate removal"]
+    },
+    {
+      "name": "speeches",
+      "kind": "external",
+      "origin": "auto-transcribed speech files, data/speeches/*.txt",
+      "license": "No-License-Granted",
+      "preprocessing": ["trim", "length filter", "exact-duplicate removal"]
+    },
+    {
+      "name": "english-wordnet-2025-json",
+      "kind": "external",
+      "origin": "Open English WordNet 2025 synset export (en-word.net), flattened from the 45 lexicographer-class .json files to data/english-wordnet-2025-json/wordnet.jsonl by scripts/wordnet_to_jsonl.py",
+      "license": "CC-BY-4.0",
+      "preprocessing": ["synset JSON flattened to one dictionary entry per line", "entries-*.json and frames.json skipped (no glosses)", "trim", "length filter", "exact-duplicate removal"]
+    },
+    {
+      "name": "web-bible",
+      "kind": "external",
+      "origin": "World English Bible, data/misc/bible-full.md (text states it is free from blessedtxts.com)",
+      "license": "Public-Domain",
+      "preprocessing": ["trim", "length filter", "exact-duplicate removal"]
+    }
+  ]
+}

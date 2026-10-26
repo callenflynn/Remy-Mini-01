@@ -1,0 +1,15 @@
+{
+  "seed": 7,
+  "split": { "strategy": "hash", "train": 0.6, "val": 0.2, "test": 0.2 },
+  "normalize": { "min_chars": 10, "max_chars": 100000 },
+  "synthetic": { "arithmetic": 12, "logic": 12, "word_problems": 12, "instructions": 0, "coding": 0 },
+  "sources": [
+    {
+      "name": "tiny-fixture",
+      "kind": "fixture",
+      "origin": "project-authored test fixture in crates/lm-data/fixtures",
+      "license": "CC0-1.0",
+      "preprocessing": ["trim", "length filter", "exact-duplicate removal"]
+    }
+  ]
+}
